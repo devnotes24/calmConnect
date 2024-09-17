@@ -62,7 +62,7 @@ const { VertexAI } = require('@google-cloud/vertexai');
 const path = require('path');
 
 // Path to your service account key file
-const keyFilePath = path.join('/etc/secrets/burnished-mark-434605-s1-92ec081dba93.json');
+const keyFilePath = path.join('burnished-mark-434605-s1-92ec081dba93.json');
 
 // Initialize Google Auth Library with the service account key
 const auth = new GoogleAuth({
