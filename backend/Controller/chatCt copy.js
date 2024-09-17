@@ -56,26 +56,17 @@
 //   }
 // };
 
+
 const { GoogleAuth } = require('google-auth-library');
 const { VertexAI } = require('@google-cloud/vertexai');
-const fs = require('fs');
 const path = require('path');
 
-// Decode the base64-encoded service account key and write to a temporary file
-const base64ServiceAccountKey = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
-const keyFilePath = path.join('/tmp', 'service-account-key.json');
-
-// Ensure the environment variable is set
-if (!base64ServiceAccountKey) {
-  throw new Error('GOOGLE_APPLICATION_CREDENTIALS_BASE64 environment variable is not set.');
-}
-
-// Write the decoded key to a temporary file
-fs.writeFileSync(keyFilePath, Buffer.from(base64ServiceAccountKey, 'base64'));
+// Path to your service account key file
+const keyFilePath = path.join('burnished-mark-434605-s1-92ec081dba93.json');
 
 // Initialize Google Auth Library with the service account key
 const auth = new GoogleAuth({
-  keyFilename: keyFilePath, // Temporary file path
+  keyFilename: keyFilePath,
   scopes: ['https://www.googleapis.com/auth/cloud-platform'], // Required scopes
 });
 
@@ -104,8 +95,7 @@ async function generateFromTextInput(prompt) {
 // Define the chat endpoint that uses the AI generation function
 exports.chatFn = async (req, res) => {
   const { prompt } = req.body;
-  console.log("Processing AI request...");
-
+  console.log("processing")
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
   }
