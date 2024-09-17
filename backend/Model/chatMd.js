@@ -3,6 +3,10 @@ const bcrypt = require('bcryptjs');
 const randomUUID = require("crypto");
 
 const chatSchema = new mongoose.Schema({
+//   id: {
+//     type: String,
+//     default: randomUUID,
+//   },
   role: {
     type: String,
     // required: true,
@@ -16,20 +20,20 @@ const chatSchema = new mongoose.Schema({
 const regLoginSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    // required: true,
   },
   lastName: {
     type: String,
-    required: true,
+    // required: true,
   },
   email: {
     type: String,
-    required: true,
-    unique: true,
+    // required: true,
+    // unique: true,
   },
   password: {
     type: String,
-    required: true,
+    // required: true,
   },
   isAdmin: {
     type: String,

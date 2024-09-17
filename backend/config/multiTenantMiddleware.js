@@ -8,7 +8,7 @@ const multiTenantMiddleware = async (req, res, next) => {
     req.globalDB = await connectGlobalDB();
   } catch (error) {
     console.error(
-      `Failed to connect to the database for college: ${collegeName}`,
+      `Failed to connect to the database}`,
       error,
     );
     if (error.message.includes('does not exist or is empty')) {

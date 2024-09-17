@@ -55,66 +55,115 @@
 //     res.status(500).json({ message: 'Failed to get response from AI', error });
 //   }
 // };
-
-const { GoogleAuth } = require('google-auth-library');
 const { VertexAI } = require('@google-cloud/vertexai');
-const fs = require('fs');
+const { GoogleAuth } = require('google-auth-library');
+const createChatModel = require('../Model/chatMd');
 const path = require('path');
 
-// Decode the base64-encoded service account key and write to a temporary file
-const base64ServiceAccountKey = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
-const keyFilePath = path.join('/tmp', 'service-account-key.json');
+// Service account key file path
+const keyFilePath = path.join('burnished-mark-434605-s1-92ec081dba93.json');
 
-// Ensure the environment variable is set
-if (!base64ServiceAccountKey) {
-  throw new Error('GOOGLE_APPLICATION_CREDENTIALS_BASE64 environment variable is not set.');
-}
-
-// Write the decoded key to a temporary file
-fs.writeFileSync(keyFilePath, Buffer.from(base64ServiceAccountKey, 'base64'));
-
-// Initialize Google Auth Library with the service account key
+// Google Auth initialization
 const auth = new GoogleAuth({
-  keyFilename: keyFilePath, // Temporary file path
-  scopes: ['https://www.googleapis.com/auth/cloud-platform'], // Required scopes
+  keyFilename: keyFilePath,
+  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
 });
 
-// Function to generate text from a prompt using Vertex AI
-async function generateFromTextInput(prompt) {
-  const vertexAI = new VertexAI({
+// Initialize Vertex AI client
+const initializeVertexAI = async () => {
+  const client = new VertexAI({
     authClient: await auth.getClient(),
-    project: 'burnished-mark-434605-s1', // Replace with your project ID
-    location: 'us-central1',
+    project: 'burnished-mark-434605-s1', // Replace with your GCP project ID
+    location: 'us-central1', // Adjust the region if needed
   });
+  return client;
+};
 
-  const generativeModel = vertexAI.getGenerativeModel({
-    model: 'gemini-1.5-flash-001',
-  });
+exports.generateChatCompletion = async (req, res, next) => {
+  const { email, message } = req.body;
+  const User = createChatModel(req.globalDB);
 
   try {
-    const resp = await generativeModel.generateContent(prompt);
-    const contentResponse = await resp.response;
-    return contentResponse;
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'User not registered or token malfunctioned' });
+    }
+
+    // Retrieve chat history from user data
+    const chats = user.chats.map(({ role, content }) => `${role}: ${content}`).join('\n');
+
+    // Add the user's new message to the conversation
+    const userMessage = `user: ${message}`;
+    const fullPrompt = `${chats}\n${userMessage}`;
+
+    user.chats.push({ role: 'user', content: message });
+
+    // Initialize Vertex AI client
+    const vertexAI = await initializeVertexAI();
+
+    // Call Vertex AI's generative model
+    const generativeModel = vertexAI.getGenerativeModel({
+      model: 'gemini-1.5-flash-001', // Specify the Vertex AI model ID
+    });
+
+    // Send the chat history (with the new user message) to Vertex AI
+    const response = await generativeModel.generateContent(fullPrompt);
+
+    // Extract the AI response
+    const aiResponse = {
+      content: response.response.candidates[0].content.parts[0].text,
+      role: 'model',
+    };
+
+    // Add the AI's response to the user's chat history
+    user.chats.push(aiResponse);
+
+    // Save the updated user data
+    await user.save();
+
+    // Send the updated chat history back to the user
+    return res.status(200).json({ chats: user.chats });
   } catch (error) {
     console.error('Error generating content:', error);
-    throw new Error('Failed to generate content');
+    return res.status(500).json({ message: 'Failed to get response from AI', error });
   }
-}
+};
 
-// Define the chat endpoint that uses the AI generation function
-exports.chatFn = async (req, res) => {
-  const { prompt } = req.body;
-  console.log("Processing AI request...");
 
-  if (!prompt) {
-    return res.status(400).json({ error: 'Prompt is required' });
-  }
+exports.sendChatsToUser = async (req, res, next) => {
+  const User = createChatModel(req.globalDB);
+  const { email } = req.body;
 
   try {
-    const aiResponse = await generateFromTextInput(prompt);
-    res.json({ aiResponse });
+    const user = await User.findOne({email});
+    if (!user) {
+      return res.status(401).send('User not registered or token malfunctioned');
+    }
+    return res.status(200).json({ message: 'OK', chats: user.chats });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ message: 'Failed to get response from AI', error });
+    console.error(error);
+    return res.status(500).json({ message: 'ERROR', cause: error.message });
+  }
+};
+
+exports.deleteChats = async (req, res, next) => {
+  const User = createChatModel(req.globalDB);
+  const { email } = req.body;
+// console.log(email)
+  try {
+    const user = await User.findOne({email});
+    if (!user) {
+      return res.status(401).send('User not registered or token malfunctioned');
+    }
+
+    // Clear chat history
+    user.chats = [];
+    await user.save();
+
+    return res.status(200).json({ message: 'Chats cleared successfully' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'ERROR', cause: error.message });
   }
 };

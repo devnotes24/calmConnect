@@ -5,5 +5,8 @@ const regLoginCt = require('../Controller/regLoginCt');
 
 router.post('/register', regLoginCt.register);
 router.post('/login', regLoginCt.login);
+router.put('/updateUser', regLoginCt.updateUser);
+router.delete('/deleteUser', regLoginCt.deleteUser);
+
 
 module.exports = router;

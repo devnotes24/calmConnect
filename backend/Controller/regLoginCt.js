@@ -47,3 +47,57 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+
+// Update method
+exports.updateUser = async (req, res) => {
+  const User = createUserModel(req.globalDB);
+  const { name, lastName, password ,email} = req.body;
+
+  try {
+    // Find the user by ID
+    let user = await User.findOne({email});
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update fields if provided (avoid overwriting if not provided)
+    if (name) user.name = name;
+    if (lastName) user.lastName = lastName;
+
+    // Hash new password if provided
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    // Save the updated user
+    await user.save();
+
+    res.json({ success: 'User information updated successfully', user });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update user information', message: error.message });
+  }
+};
+
+// Delete method
+exports.deleteUser = async (req, res) => {
+  const User = createUserModel(req.globalDB);
+  const { email } = req.body; // Email provided in the request body for deleting the user
+
+  try {
+    // Find user by email and delete
+    const user = await User.findOneAndDelete({ email });
+
+    // If no user found with the email
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // If user deleted successfully
+    res.json({ success: 'User deleted successfully' });
+  } catch (error) {
+    // Handle any server or database errors
+    res.status(500).json({ error: 'Failed to delete user', message: error.message });
+  }
+};
