@@ -62,7 +62,7 @@ const { VertexAI } = require('@google-cloud/vertexai');
 const path = require('path');
 
 // Path to your service account key file
-const keyFilePath = path.join(__dirname, 'burnished-mark-434605-s1-92ec081dba93.json');
+const keyFilePath = path.join('/etc/secrets/burnished-mark-434605-s1-92ec081dba93.json');
 
 // Initialize Google Auth Library with the service account key
 const auth = new GoogleAuth({
@@ -95,7 +95,7 @@ async function generateFromTextInput(prompt) {
 // Define the chat endpoint that uses the AI generation function
 exports.chatFn = async (req, res) => {
   const { prompt } = req.body;
-
+  console.log("processing")
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
   }
