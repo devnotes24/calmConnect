@@ -66,10 +66,8 @@ exports.updateUser = async (req, res) => {
     if (lastName) user.lastName = lastName;
 
     // Hash new password if provided
-    if (password) {
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(password, salt);
-    }
+    if (password) user.password = password;
+    
 
     // Save the updated user
     await user.save();
