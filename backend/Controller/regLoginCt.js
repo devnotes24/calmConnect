@@ -48,6 +48,21 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.getUser = async (req, res) => {
+  const User = createUserModel(req.globalDB);
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ error: 'User not registered yet' });
+    }
+    res.json({
+      user
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 // Update method
 exports.updateUser = async (req, res) => {
